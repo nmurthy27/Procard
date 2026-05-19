@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Profile Validation
+    function isValidProfile(data) {
+      return data.keys().hasAll(['userId', 'name', 'email', 'updatedAt']) 
+        && data.userId == request.auth.uid
+        && data.name is string && data.name.size() <= 100
+        && data.email is string && data.email.size() <= 150
+        && data.updatedAt == request.time
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 1000))
+        && (!('title' in data) || (data.title is string && data.title.size() <= 100))
+        && (!('company' in data) || (data.company is string && data.company.size() <= 100))
+        && (!('linkedin' in data) || (data.linkedin is string && data.linkedin.size() <= 200))
+        && (!('twitter' in data) || (data.twitter is string && data.twitter.size() <= 100))
+        && (!('instagram' in data) || (data.instagram is string && data.instagram.size() <= 100))
+        && (!('photoFilter' in data) || (data.photoFilter is string && data.photoFilter.size() <= 500))
+        && (!('theme' in data) || (data.theme in ['modern', 'classic', 'minimal', 'bold']));
+    }
+
+    // Profiles: Public read, owner write
+    match /profiles/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isVerified() && isValidProfile(incoming());
+      allow update: if isOwner(userId) && isVerified() && isValidProfile(incoming())
+                     && incoming().userId == existing().userId;
+      allow delete: if isOwner(userId);
+    }
+
+    // Contact Validation
+    function isValidContact(data, ownerId) {
+      return data.keys().hasAll(['contactId', 'ownerId', 'createdAt'])
+        && data.ownerId == ownerId
+        && data.contactId is string
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 2000))
+        && data.createdAt == request.time;
+    }
+
+    // User Private Contacts (CRM)
+    match /users/{userId}/contacts/{contactUserId} {
+      allow read, list: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidContact(incoming(), userId);
+      allow update: if isOwner(userId) && isValidContact(incoming(), userId)
+                     && incoming().diff(existing()).affectedKeys().hasOnly(['notes']);
+      allow delete: if isOwner(userId);
+    }
+  }
+}

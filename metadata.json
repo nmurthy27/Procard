@@ -1,0 +1,6 @@
+{
+  "name": "ProCard",
+  "description": "A professional networking platform with digital QR cards, AI-powered bio enhancement, and CRM insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

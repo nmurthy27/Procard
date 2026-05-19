@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "User Profile",
+      "description": "Public professional profile data for a networking card",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "company": { "type": "string" },
+        "bio": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "twitter": { "type": "string" },
+        "instagram": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "photoFilter": { "type": "string" },
+        "theme": { "type": "string", "enum": ["modern", "classic", "minimal", "bold"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "email"]
+    },
+    "Contact": {
+      "title": "Saved Contact",
+      "description": "A contact record in the user's CRM",
+      "type": "object",
+      "properties": {
+        "contactId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["contactId", "ownerId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/profiles/{userId}": {
+      "schema": "Profile",
+      "description": "Public profiles accessible via QR code"
+    },
+    "/users/{userId}/contacts/{contactUserId}": {
+      "schema": "Contact",
+      "description": "User's private CRM of saved connections"
+    }
+  }
+}
